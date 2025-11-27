@@ -1,167 +1,484 @@
 <template>
   <div class="content">
     <div class="user-profile-container">
-      <div class="avatar-container">
-        <img :src="avatarUrl" alt="Avatar" class="avatar" />
+      <div class="user-profile-image" v-motion-pop>
+        <img :src="profileImage" alt="头像" @click.stop="toggleInfo">
+        <span class="status-ball"></span>
       </div>
-      <div class="user-info">
-        <h1>{{ userName || '访客' }}</h1>
-        <div class="typed-container">
-          <span id="typed-output"></span>
-          <span class="cursor">|</span>
+      <div class="user-name" v-motion-slide-left>
+        <h1>Hi,</h1>
+        <h1>I'm <span class="name-style">{{ userName }}</span></h1>
+      </div>
+    </div>
+    <div class="description">
+      <p ref="descriptionElement"></p>
+    </div>
+    <div class="contact-section" v-motion-pop>
+      <template v-for="contact in contacts" :key="contact.type">
+        <a v-if="contact.url" :href="contact.url" target="_blank" class="contact-item" :style="{ '--hover-color': contact.hoverColor }">
+          <i :class="contact.icon"></i>
+          <span class="tooltip">{{ contact.type }}</span>
+        </a>
+        <span v-else @click="toggleQRCode(contact.qrCode)" class="contact-item" :style="{ '--hover-color': contact.hoverColor }">
+          <i :class="contact.icon"></i>
+          <span class="tooltip">{{ contact.type }}</span>
+        </span>
+      </template>
+      <span class="contact-item" @click="toggleDarkMode" :style="{ '--hover-color': isDarkMode ? '#ffcc00' : '#666' }">
+        <i :class="darkModeIconClass"></i>
+        <span class="tooltip">{{ isDarkMode ? '浅色' : '深色' }}</span>
+      </span>
+    </div>
+    <Website /> 
+    <VisitTimer />
+
+    <Transition name="fade">
+      <div v-if="showAbout" class="overlay" @click="showAbout = false">
+        <div class="modal-content">
+          <AboutPage @close="showAbout = false" />
         </div>
       </div>
-    </div>
-    
-    <Website />
-    <VisitTimer />
-    
-    <div class="action-buttons">
-      <button @click="toggleDarkMode" :title="darkModeConfig.tooltipText">
-        <i :class="darkModeConfig.iconClass" :style="{ color: darkModeConfig.hoverColor }"></i>
-      </button>
-      <button @click="toggleAbout">
-        <i class="fas fa-info-circle"></i>
-      </button>
-    </div>
-    
-    <AboutModal v-if="showAbout" @close="showAbout = false" />
+    </Transition>
+
+    <Transition name="fade">
+      <div v-if="showQR" class="overlay" @click="hideQRCode">
+        <div class="modal-content">
+          <img :src="qrCodeSrc" alt="QR Code" class="qr-image" @click.stop>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
+import contactsData from '../config/links.json';
 import Website from './Website.vue';
+import AboutPage from './AboutPage.vue';
 import VisitTimer from './VisitTimer.vue';
-import AboutModal from './AboutModal.vue';
 import Typed from 'typed.js';
 
-// 状态管理
-const isDarkMode = ref(false);
+const contacts = ref(contactsData);
+const showQR = ref(false);
 const showAbout = ref(false);
-const avatarUrl = ref(import.meta.env.VITE_APP_AVATAR_URL || '/avatar.jpg');
+const qrCodeSrc = ref('');
+const profileImage = ref(import.meta.env.VITE_APP_PROFILE_IMAGE_URL);
 const userName = ref(import.meta.env.VITE_APP_USER_NAME);
+const descriptionElement = ref(null);
+
+const predefinedDescriptions = [
+  "你好鸭，欢迎来到我的主页！！",
+  "随时可以联系我，期待与你交流。",
+  "愿你历尽千帆，归来仍是少年。",
+  "梦想还是要有的，万一实现了呢？",
+  "心简单，世界就简单，幸福才会生长；心自由，生活就自由，到哪都有快乐。",
+  "生命太短，没有时间留给遗憾，若不是终点，请微笑一直向前。",
+  "唯有你的光辉，像漫过山岭的薄雾，像和风从静谧的世界里带来的夜曲，像朗照溪水的月色扑面而来。",
+  "慢品人间烟火色，闲观万事岁月长。",
+  "万河归海，终会相遇。",
+  "错过了落日余晖，还可以静待满天繁星。",
+  "世界，美丽易碎，不必慌乱，只要静然于心，就会海阔天空。",
+  "自由散漫的凉风，能治愈乱糟糟的坏心情。",
+  "愿你内心山河壮阔，始终相信人间值得。",
+  "花一定是送给别人吗？抛硬币一定需要结果吗？我追的一定是黄昏吗？",
+  "春来夏往，秋收冬藏，我们来日方长。",
+  "每一次日落都是太阳留给天空的温柔。",
+  "晚风轻踩着云朵，月亮在贩售快乐，你从银河背后靠近我，我与星辉一同为你沉沦。",
+  "离别是人间常态，相逢才是意外。",
+  "日子甜甜的，像清晨的柠檬水，像冬日的太阳，像梦里的大海，像第一次遇见你。",
+  "哪来的天生优秀，都是一步一个坑踩过来的。",
+  "总要尝遍所有的路，在对生活充满期待。",
+  "你未必万丈光芒，但你温暖有光。",
+  "种自己的花，爱自己的宇宙。",
+  "对于喜欢的事情，都要全力以赴的努力做到最好。",
+  "因为心中有梦，所以暗里有光，遥遥无期，那又怎样，踮起脚尖，就更接近阳光。",
+  "别灰心，普普通通的你也值得万般宠溺。",
+  "生活总是来来往往，千万别等来日方长。",
+  "你的眸是深情的海，满山的花，堕落了我所有的温情。",
+  "不能输给月亮，我也要一直发光发亮。",
+  "在广袤的空间和无限的时间中，能与你共享同一颗行星和同一段时光是我的荣幸。",
+  "如果觉得身边的一切都太不如意，那就去见喜欢的人，做喜欢的事，买喜欢的东西。",
+  "借一把清风吹开阴霾，接一碗烈酒谈笑风生。",
+  "坐看庭前花开花落，笑看天边云卷云舒。",
+  "你不要着急，你先去读你的书，我去看我的电影，总有一天，我们会窝在一起，读同一本书，看同一部电影。",
+  "要珍惜的人很多，你在其中名列前茅。",
+  "对待自己温柔一点，你只不过是宇宙的孩子，与植物、星辰没什么两样。",
+  "热爱可抵岁月漫长，温柔可挡艰难时光。",
+  "宇宙山河烂漫，人间点滴温暖都值得我前进。",
+  "不要难过，人的运势就像天上的月亮一样，此消彼长，缺了的部分，还会圆回来。",
+  "爱这世间，草木如书，爱这岁月，素静如湖。",
+  "星星醉酒到处跑，月亮跌进深海里，我以前从未觉得人间美好的，直到你来了。",
+  "阳光的酒调得很淡，却很醇，浅浅地斟在每一个杯型的小野花里。",
+  "能打动人的从来不是花言巧语，而是恰到好处的温柔以及真挚的内心。",
+  "听风八百遍，才知是人间。",
+  "跟这个世界交手的许多年来，你是否，光彩依旧，兴趣盎然。",
+  "独自走过苍苍莽莽，与你同行才有了光。",
+  "你所看到的惊艳，都曾被平庸历练。",
+  "我们坠落，破碎，掉入深渊，但我们终会被托起，被治愈，我们无所畏惧。",
+  "只是为了更好的遇见，才赠予了距离和时间。那一天值得等待，那一眼满载星海。",
+  "迟来的阳光不会拯救凋零的花，但花一定会再次开放。",
+  "脚踩在淤泥里，担心要向光明。",
+  "远处的云雾轻拂过黛山，橘黄的日落点缀其间，有风经过，停在窗边。这些美好的事物在一瞬间通通向我奔来，嘱咐我要热爱这个世界。",
+  "我用执着烧毁了所有的幼稚与任性，那片荒野慢慢长出了理智和清醒。",
+  "岁月这东西是要把人变成各种样子的。",
+  "成熟的人，不问过去，聪明的人，不问现在，豁达的人，不问未来。",
+  "你我之间隔着千山万水，我种下一缕思念，愿思念长成树，开满花，花随着风，飘向最美的你，你闻着花香，我想着你，如此，甚好。",
+  "你很好，不要总觉得自己不好，我希望有一天你能和内心的自己真正和解，不要让表象和内心互相打架了，放轻松一点。",
+  "过去的一切你都无法改变，这是基本的物理原理。",
+  "人安静的生活，哪怕是静静地听着风声，亦能感受到诗意的生活。",
+  "人间的事，只要生机不灭，即使重遭天灾人祸，暂被阻抑，终有抬头的日子。",
+  "山高自有碧云时，月圆总有盈亏时。",
+  "我深怕自己本非美玉，故而不敢加以刻苦琢磨；却又半信自己是块美玉，故又不肯庸庸碌碌，与瓦砾为伍。",
+  "我们能做的，是从失望中看到希望。真正的乐观，不是因为没见过世界的黑暗，恰恰是因为见过，才懂得生活的珍贵。",
+  "世间多少纷扰事，浮华落尽总随风。",
+  "时间并不是解药，但时间里藏着解药。",
+  "与理想平等交易，同喧嚣保持距离。",
+  "前方的风景很好，我的意思是别回头。",
+  "没有销声匿迹，我在热爱生活。",
+  "天总会亮的，没有太阳也会。",
+  "总有人间一两风，填我十万八千梦。",
+  "然而生活辽阔，不要只活在爱恨里。",
+  "岁月无波澜，余生不悲欢。",
+  "在谷底也要开花，在海底也要望月。",
+  "在这个夏天和更好的自己见面。",
+  "穿自己喜欢的衣服，和不累的人相处。",
+  "日子好长，充满希望。",
+  "乐观和爱才是生活的解药。",
+  "那就在一起，黄昏与四季。",
+  "要相信美好的都在路上。",
+  "我们在黑暗中并肩前行。",
+  "想让每个平凡的日子溢出欢喜。",
+  "希望不辜负理想也不辜负热爱。",
+  "要在快乐的年纪活的精彩且迷人。",
+  "寂静消散，曙光暗涌，都奔向白昼。",
+  "最大的心安是：自律温柔和爱自己。",
+  "生活总会难过，但好运也会如期而至。",
+  "平凡且认真的生活总会变得可爱。",
+  "生活给你苦难，其实是在铺垫浪漫。",
+  "我频繁的记录着，因为生活很值得。",
+  "愿所有美好的事物都奔向我们而来。",
+  "岁月迢迢，我们总要有一往无前的力量。",
+  "做一个温柔的人，永远不卑不亢清澈善良。",
+  "一旦热爱生活，生活就会教你治愈一切的魔法。",
+  "会有遗憾的时候，也会有完满的一天，不必担心。",
+  "好的坏的我们都收下吧，然后一声不响继续生活。",
+  "努力向上才更开心也更滚烫。",
+  "所有缝隙都是光照进来的方向。",
+  "努力经营当下，直至未来明朗。",
+  "路还长，温柔的事一定会发生。",
+  "把温柔碾碎，放入生活的缝隙中。",
+  "记得向前看，别烂在过去和梦里。",
+  "银河撑不起理想，却有温柔和力量。",
+  "要在谴倦不尽的爱意里勇敢地生活。",
+  "一定要站在你所热爱的世界里闪闪发光！",
+  "因为有了人海，相遇才会显得那么意外。",
+  "I hope you have a happy day every day."
+];
+
 let typedInstance = null;
 
-// 计算属性缓存深色模式配置
-const darkModeConfig = computed(() => ({
-  iconClass: isDarkMode.value ? 'fas fa-sun' : 'fas fa-moon',
-  tooltipText: isDarkMode.value ? '切换至浅色模式' : '切换至深色模式',
-  hoverColor: isDarkMode.value ? '#ffcc00' : '#666'
-}));
-
-// 初始化Typed.js
 const initializeTyped = () => {
-  const options = {
-    strings: ['前端开发者', 'Vue爱好者', '技术探索者'],
-    typeSpeed: 100,
-    backSpeed: 50,
-    loop: true
-  };
-  typedInstance = new Typed('#typed-output', options);
+  typedInstance = new Typed(descriptionElement.value, {
+    strings: predefinedDescriptions,
+    typeSpeed: 120,
+    backSpeed: 80,
+    showCursor: true,
+    cursorChar: '|',
+    loop: true,
+  });
 };
 
-// 生命周期管理
 onMounted(() => {
-  // 初始化深色模式
+  initializeTyped();
+});
+
+const toggleQRCode = (qrCode) => {
+  qrCodeSrc.value = qrCode || '';
+  showQR.value = !showQR.value;
+};
+
+const hideQRCode = () => {
+  showQR.value = false;
+};
+
+const toggleInfo = () => {
+  showAbout.value = !showAbout.value;
+};
+
+const isDarkMode = ref(false);
+const darkModeIconClass = ref('fas fa-moon');
+
+const toggleDarkMode = () => {
+  isDarkMode.value = !isDarkMode.value;
+  document.body.classList.toggle('dark-mode', isDarkMode.value);
+
+  localStorage.setItem('darkMode', isDarkMode.value);
+
+  darkModeIconClass.value = isDarkMode.value ? 'fas fa-sun' : 'fas fa-moon';
+};
+
+onMounted(() => {
   const savedDarkMode = localStorage.getItem('darkMode');
   if (savedDarkMode !== null) {
     isDarkMode.value = savedDarkMode === 'true';
     document.body.classList.toggle('dark-mode', isDarkMode.value);
   }
-  
-  initializeTyped();
+
+  darkModeIconClass.value = isDarkMode.value ? 'fas fa-sun' : 'fas fa-moon';
 });
-
-onUnmounted(() => {
-  if (typedInstance) {
-    typedInstance.destroy();
-  }
-});
-
-// 事件处理
-const toggleDarkMode = () => {
-  isDarkMode.value = !isDarkMode.value;
-  document.body.classList.toggle('dark-mode', isDarkMode.value);
-  localStorage.setItem('darkMode', isDarkMode.value);
-};
-
-const toggleAbout = () => {
-  showAbout.value = !showAbout.value;
-};
 </script>
 
 <style scoped>
 .content {
   flex: 1;
   display: flex;
+  justify-content: center;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
-  padding: 2rem 1rem;
-}
+  gap: 30px;
+  margin-top: 20px;
 
-.user-profile-container {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  width: 100%;
-  max-width: 800px;
-}
+  .user-profile-container {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+  }
 
-.avatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--border-color);
-}
+  .user-profile-image {
+    display: flex;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px var(--shadow-color);
+    padding: 5px;
+    border: 3px solid var(--border-color);
+    position: relative;
 
-.typed-container {
-  font-size: 1.2rem;
-  margin-top: 0.5rem;
-}
+    img {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background-size: cover;
+      background-position: center;
+    }
 
-.cursor {
-  animation: blink 1s step-end infinite;
-}
+    .status-ball {
+      position: absolute;
+      background: #00c800;
+      width: 2em;
+      height: 2em;
+      border-radius: 20px;
+      border: 3px solid #eee;
+      bottom: 5px;
+      right: 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s ease;
+      z-index: 1;
+      cursor: pointer;
+      overflow: hidden;
 
-.action-buttons {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
-}
+      &::before {
+        content: "在线中";
+        color: #00c800;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out, color 0.1s ease-in-out;
+      }
 
-button {
-  background: rgba(var(--background-color-rgb), 0.5);
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
+      &:hover {
+        width: 4.5em;
+        height: 2em;
+      }
 
-button:hover {
-  transform: scale(1.1);
-  background: rgba(var(--background-color-rgb), 0.8);
-}
+      &:hover::before {
+        opacity: 1;
+        color: #eee;
+      }
+    }
+  }
 
-@keyframes blink {
-  from, to { opacity: 1; }
-  50% { opacity: 0; }
+  .user-name {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    font-size: 1.3em;
+
+    h1 {
+      margin: 0;
+    }
+  }
+
+  .name-style {
+    position: relative;
+
+    &:before {
+      position: absolute;
+      border-radius: 5px;
+      bottom: 0;
+      left: 50%;
+      transform: translate(-50%);
+      z-index: -1;
+      content: "";
+      background: #ffcc00ad;
+      height: 30%;
+      width: 110%;
+      transition: height 0.3s ease-in-out;
+    }
+    &:hover::before {
+      height: 60%;
+    }
+  }
+
+  .description {
+    display: flex;
+    min-height: 32px;
+    width: 100%;
+    max-width: 500px;
+    font-family: 'Georgia', serif;
+    font-size: 1.2rem;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease-in-out;
+
+    &::before,
+    &::after {
+      content: '"';
+      font-size: 1.5em;
+      color: #999;
+      margin: 0 10px;
+    }
+
+    p {
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .contact-section {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 5px 10px;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    transition: all 0.3s ease-in-out;
+
+    .contact-item {
+      color: var(--text-color);
+      font-size: var(--icon-size);
+      cursor: pointer;
+      transition: transform 0.3s ease-in-out, color 0.3s ease-in-out;
+      position: relative;
+
+      .fas.fa-moon {
+        width: 20px;
+        height: 20px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      &:hover {
+        transform: translateY(-5px) rotate(10deg);
+        color: var(--hover-color);
+
+        .tooltip {
+          opacity: 1;
+          transform: translate(-50%, 0);
+        }
+      }
+
+      .tooltip {
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translate(-50%, 10px);
+        opacity: 0;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        white-space: nowrap;
+        pointer-events: none;
+      }
+    }
+
+    &:hover {
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px var(--shadow-color);
+      background-color: rgba(var(--background-color-rgb), 0.2);
+    }
+  }
+
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .fade-enter-active,
+  .fade-leave-active {
+    transition: all 0.3s ease-out;
+    
+    .modal-content {
+      transition: all 0.3s ease-out;
+    }
+  }
+
+  .fade-enter-from,
+  .fade-leave-to {
+    opacity: 0;
+    
+    .modal-content {
+      transform: translateY(30px) scale(0.8);
+      opacity: 0;
+    }
+  }
+
+  .fade-enter-to,
+  .fade-leave-from {
+    opacity: 1;
+    
+    .modal-content {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  .qr-image {
+    width: 300px;
+    height: 300px;
+    background: white;
+    padding: 20px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 8px var(--shadow-color);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    &:hover {
+      transform: scale(1.03) translateY(-5px);
+      box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.2);
+    }
+  }
 }
 
 @media screen and (max-width: 768px) {
-  .user-profile-container {
-    flex-direction: column;
-    text-align: center;
-    gap: 1rem;
+  .content {
+    gap: 15px;
   }
-  
-  .avatar {
-    width: 100px;
-    height: 100px;
+  .content .user-profile-container {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  h1 {
+    font-size: 1.5em;
   }
 }
 </style>
