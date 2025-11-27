@@ -1,148 +1,128 @@
 <template>
-  <div class="website-container">
-    <div class="search-box">
-      <input 
-        v-model="searchQuery" 
-        type="text" 
-        placeholder="搜索网站..." 
-        @input="handleSearch"
-      >
-    </div>
-    <div class="site-grid">
-      <div 
-        v-for="site in filteredSites" 
-        :key="site.id"
-        class="site-box"
-        @click="handleSiteClick(site)"
-        @mouseenter="handleMouseEnter(site.id)"
-        @mouseleave="handleMouseLeave"
-      >
-        <div class="site-icon">
-          <i :class="hoveredSiteId === site.id ? site.hoverIcon : site.icon"></i>
+  <div class="container">
+    <div class="swiper-container">
+      <div class="swiper-wrapper">
+        <div v-for="(siteChunk, index) in chunkedSites" :key="index" class="swiper-slide">
+          <div class="site-grid">
+            <div v-for="(site, i) in siteChunk" :key="i" class="site-box" @click="openLink(site.url)">
+              <div class="site-content">
+                <i :class="site.icon" aria-hidden="true"></i>
+                <span class="site-name">{{ site.name }}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="site-name">{{ site.name }}</div>
       </div>
+      <div class="swiper-pagination"></div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
-import { debounce } from 'perfect-debounce';
+import { ref, onMounted } from 'vue';
+import Swiper from 'swiper/bundle';
+import 'swiper/swiper-bundle.css';
+import siteData from '../config/site.json';
 
-// 网站数据
-const sites = ref([
-  { id: 1, name: 'GitHub', url: 'https://github.com', icon: 'fab fa-github', hoverIcon: 'fab fa-github-alt' },
-  { id: 2, name: '掘金', url: 'https://juejin.cn', icon: 'fas fa-fire', hoverIcon: 'fas fa-fire-alt' },
-  { id: 3, name: 'Stack Overflow', url: 'https://stackoverflow.com', icon: 'fab fa-stack-overflow', hoverIcon: 'fab fa-stack-overflow' },
-  { id: 4, name: 'MDN', url: 'https://developer.mozilla.org', icon: 'fas fa-book', hoverIcon: 'fas fa-book-open' },
-  // 可添加更多网站
-]);
+const chunkedSites = ref(siteData.reduce((acc, site, index) => {
+  const chunkIndex = Math.floor(index / 6);
+  if (!acc[chunkIndex]) acc[chunkIndex] = [];
+  acc[chunkIndex].push(site);
+  return acc;
+}, []));
 
-// 状态管理
-const searchQuery = ref('');
-const hoveredSiteId = ref(null);
-const filteredSites = ref([...sites.value]);
-
-// 搜索处理（防抖优化）
-const handleSearch = debounce((e) => {
-  const query = e.target.value.toLowerCase().trim();
-  filteredSites.value = query 
-    ? sites.value.filter(site => site.name.toLowerCase().includes(query))
-    : [...sites.value];
-}, 300);
-
-// 事件处理
-const handleSiteClick = (site) => {
-  if (site.url) {
-    window.open(site.url, '_blank', 'noopener,noreferrer');
-  }
+const openLink = (url) => {
+  if (url) window.open(url, '_blank');
 };
 
-const handleMouseEnter = (id) => {
-  hoveredSiteId.value = id;
-};
-
-const handleMouseLeave = () => {
-  hoveredSiteId.value = null;
-};
-
-// 初始化
 onMounted(() => {
-  // 可以从本地存储加载自定义网站
-  const savedSites = localStorage.getItem('customSites');
-  if (savedSites) {
-    try {
-      const parsed = JSON.parse(savedSites);
-      sites.value = [...sites.value, ...parsed];
-      filteredSites.value = [...sites.value];
-    } catch (e) {
-      console.error('Failed to parse custom sites', e);
-    }
-  }
+  new Swiper('.swiper-container', {
+    slidesPerView: 1,
+    spaceBetween: 20,
+    pagination: { el: '.swiper-pagination', clickable: true },
+    mousewheel: true,
+  });
 });
 </script>
 
+
 <style scoped>
-.website-container {
+.container {
+  max-width: 700px;
   width: 100%;
-  max-width: 1000px;
-  padding: 1rem;
+  margin: 30px 0 20px;
 }
 
-.search-box {
-  margin-bottom: 1.5rem;
+.swiper-container {
+  overflow: hidden;
+  padding: 10px;
 }
 
-.search-box input {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background-color: rgba(var(--background-color-rgb), 0.5);
-  font-size: 1rem;
-  outline: none;
-  transition: all 0.3s ease;
-}
-
-.search-box input:focus {
-  border-color: var(--link-hover-color);
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.2);
+.swiper-pagination {
+  bottom: inherit;
 }
 
 .site-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
 }
 
 .site-box {
-  padding: 1.5rem 0.5rem;
+  padding: 30px;
   backdrop-filter: blur(10px);
   border-radius: var(--border-radius);
   border: 1px solid var(--border-color);
   background-color: rgba(var(--background-color-rgb), 0.2);
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 1px 8px var(--shadow-color);
+  }
 }
 
-.site-box:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  border-color: var(--link-hover-color);
-}
+.site-content {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
 
-.site-icon {
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
-  transition: all 0.3s ease;
+  i {
+    font-size: var(--icon-size);
+  }
 }
 
 .site-name {
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin: 0;
+  font-size: 1.17em;
+  font-weight: bold;
+}
+
+@media screen and (max-width: 768px) {
+  .site-content {
+    gap: 5px;
+    flex-direction: column;
+  }
+
+  .site-box {
+    padding: 15px;
+    border-radius: 8px;
+  }
+
+  .site-name {
+    font-size: 16px;
+  }
+
+  .site-content i {
+    font-size: 18px;
+  }
+}
+
+:deep(.swiper-pagination-bullet-active) {
+  background: #8c8c8c94;
+  width: 20px;
+  border-radius: 5px;
 }
 </style>
