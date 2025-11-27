@@ -23,12 +23,8 @@
       <button @click="toggleAbout">
         <i class="fas fa-info-circle"></i>
       </button>
-      <button @click="toggleQRCode(qrCodeUrl)">
-        <i class="fas fa-qrcode"></i>
-      </button>
     </div>
     
-    <QRCode v-if="showQR" :src="qrCodeSrc" @close="showQR = false" />
     <AboutModal v-if="showAbout" @close="showAbout = false" />
   </div>
 </template>
@@ -37,16 +33,12 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import Website from './Website.vue';
 import VisitTimer from './VisitTimer.vue';
-import QRCode from './QRCode.vue';
 import AboutModal from './AboutModal.vue';
 import Typed from 'typed.js';
 
 // 状态管理
 const isDarkMode = ref(false);
-const showQR = ref(false);
 const showAbout = ref(false);
-const qrCodeSrc = ref('');
-const qrCodeUrl = ref(import.meta.env.VITE_APP_QR_CODE_URL || '');
 const avatarUrl = ref(import.meta.env.VITE_APP_AVATAR_URL || '/avatar.jpg');
 const userName = ref(import.meta.env.VITE_APP_USER_NAME);
 let typedInstance = null;
@@ -92,11 +84,6 @@ const toggleDarkMode = () => {
   isDarkMode.value = !isDarkMode.value;
   document.body.classList.toggle('dark-mode', isDarkMode.value);
   localStorage.setItem('darkMode', isDarkMode.value);
-};
-
-const toggleQRCode = (qrCode) => {
-  qrCodeSrc.value = qrCode || '';
-  showQR.value = !showQR.value;
 };
 
 const toggleAbout = () => {
