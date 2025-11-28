@@ -4,9 +4,14 @@
     <div class="background"></div>
     <Home />
     <footer>
-      <span>© 2025 Made in <a href="https://mlhh.cn" target="_blank">十安 | </a></span>
-      <a href="https://cloud.tencent.com/act/pro/eo-freeplan?ad_trace=3fe11a4b31634407819b427b61a2b768&from=28455&from_column=28455" target="_blank">腾讯云边缘安全加速EdgeOne</a>(国内)提供强劲加速 | 
-      <a href="https://beian.miit.gov.cn/" target="_blank">豫ICP备2024077903号-3</a>
+      <div class="footer-content">
+        <span class="footer-item">© 2025 Made in <a href="https://mlhh.cn" target="_blank">十安</a></span>
+        <span class="footer-separator">|</span>
+        <a class="footer-item" href="https://cloud.tencent.com/act/pro/eo-freeplan?ad_trace=3fe11a4b31634407819b427b61a2b768&from=28455&from_column=28455" target="_blank">腾讯云边缘安全加速EdgeOne</a>
+        <span class="footer-text">(国内)提供强劲加速</span>
+        <span class="footer-separator">|</span>
+        <a class="footer-item" href="https://beian.miit.gov.cn/" target="_blank">{{ icpNumber }}</a>
+      </div>
     </footer>
   </div>
 </template>
@@ -16,8 +21,8 @@ import { ref } from 'vue';
 import Home from './components/Home.vue';
 
 // 环境变量引用
-const userName = ref(import.meta.env.VITE_APP_USER_NAME);
-const icpNumber = ref(import.meta.env.VITE_APP_ICP_NUMBER);
+const userName = ref(import.meta.env.VITE_APP_USER_NAME || '十安');
+const icpNumber = ref(import.meta.env.VITE_APP_ICP_NUMBER || '豫ICP备2024077903号-3');
 const policenumber = ref(import.meta.env.VITE_APP_POLICE_NUMBER);
 </script>
 
@@ -46,17 +51,43 @@ footer {
   margin-top: auto;
   width: 100%;
   box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.footer-content {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 footer a {
   color: var(--text-color);
   text-decoration: none;
   transition: color 0.3s ease;
+  white-space: nowrap;
 }
 
 footer a:hover {
   text-decoration: underline;
-  color: var(--link-hover-color, #42b983); /* 使用Vue默认的链接 hover 颜色作为备选 */
+  color: var(--link-hover-color, #42b983);
+}
+
+.footer-item {
+  white-space: nowrap;
+}
+
+.footer-text {
+  white-space: nowrap;
+}
+
+.footer-separator {
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 4px;
 }
 
 /* 移动端适配 */
@@ -65,15 +96,59 @@ footer a:hover {
     font-size: 0.8rem;
     padding: 15px 10px;
     line-height: 1.6;
-    display: flex;
+  }
+  
+  .footer-content {
     flex-direction: column;
+    gap: 6px;
+  }
+  
+  .footer-separator {
+    display: none;
+  }
+  
+  .footer-item, .footer-text {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.4;
+  }
+  
+  footer a {
+    display: inline-block;
+    padding: 2px 0;
+  }
+}
+
+/* 超小屏幕适配 */
+@media screen and (max-width: 480px) {
+  footer {
+    font-size: 0.75rem;
+    padding: 12px 8px;
+  }
+  
+  .footer-content {
+    gap: 4px;
+  }
+  
+  .footer-item, .footer-text {
+    line-height: 1.3;
+  }
+}
+
+/* 横屏模式适配 */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  footer {
+    padding: 12px 10px;
+  }
+  
+  .footer-content {
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 8px;
   }
   
-  /* 移除垂直排列时的分隔线 */
-  footer span + a::before,
-  footer a + a::before {
-    content: none;
+  .footer-separator {
+    display: inline;
   }
 }
 </style>
