@@ -31,6 +31,9 @@ const policenumber = ref(import.meta.env.VITE_APP_POLICE_NUMBER);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  /* 确保容器可以滚动 */
+  overflow-x: hidden;
+  position: relative;
 }
 
 .background {
@@ -40,7 +43,8 @@ const policenumber = ref(import.meta.env.VITE_APP_POLICE_NUMBER);
   width: 100%;
   height: 100%;
   z-index: -1;
-  /* 可以在这里添加背景样式 */
+  /* 确保背景不会阻止滚动 */
+  pointer-events: none;
 }
 
 footer {
@@ -53,6 +57,9 @@ footer {
   box-sizing: border-box;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
+  /* 确保footer不会阻止内容滚动 */
+  position: relative;
+  z-index: 1;
 }
 
 .footer-content {
@@ -92,6 +99,14 @@ footer a:hover {
 
 /* 移动端适配 */
 @media screen and (max-width: 768px) {
+  .app-container {
+    /* 移动端确保可以滚动 */
+    min-height: 100vh;
+    height: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
+  }
+
   footer {
     font-size: 0.8rem;
     padding: 15px 10px;
@@ -150,5 +165,18 @@ footer a:hover {
   .footer-separator {
     display: inline;
   }
+}
+
+/* 确保body和html元素也可以滚动 */
+:global(html), :global(body) {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+:global(body) {
+  position: relative;
+  overflow-y: auto;
 }
 </style>
