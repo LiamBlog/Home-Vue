@@ -1,13 +1,14 @@
-<!-- src/App.vue -->
 <template>
   <div class="app-container">
     <div class="background"></div>
-    <Home />
+    <main class="main-content">
+      <Home />
+    </main>
     <footer>
       <div class="footer-content">
         <span class="footer-item">© 2025 Made in <a href="https://mlhh.cn" target="_blank">十安</a></span>
         <span class="footer-separator">|</span>
-        <a class="footer-item" href="https://cloud.tencent.com/act/pro/eo-freeplan?ad_trace=3fe11a4b31634407819b427b61a2b768&from=28455&from_column=28455" target="_blank">腾讯云边缘安全加速EdgeOne</a>
+        <a class="footer-item" href="https://cloud.tencent.com/act/pro/eo-freeplan?ad_trace=3fe11a4b31634407819b427b61a2b768&from=28455&from-column=28455" target="_blank">腾讯云边缘安全加速EdgeOne</a>
         <span class="footer-text">(国内)提供强劲加速</span>
         <span class="footer-separator">|</span>
         <a class="footer-item" href="https://beian.miit.gov.cn/" target="_blank">{{ icpNumber }}</a>
@@ -31,9 +32,16 @@ const policenumber = ref(import.meta.env.VITE_APP_POLICE_NUMBER);
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  /* 确保容器可以滚动 */
+  min-height: -webkit-fill-available; /* 针对iOS Safari */
   overflow-x: hidden;
   position: relative;
+}
+
+.main-content {
+  flex: 1;
+  width: 100%;
+  /* 确保主要内容区域可以滚动 */
+  overflow-y: auto;
 }
 
 .background {
@@ -50,6 +58,7 @@ const policenumber = ref(import.meta.env.VITE_APP_POLICE_NUMBER);
 footer {
   text-align: center;
   padding: 20px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); /* iOS安全区域 */
   font-size: 0.9rem;
   color: var(--text-color);
   margin-top: auto;
@@ -102,6 +111,7 @@ footer a:hover {
   .app-container {
     /* 移动端确保可以滚动 */
     min-height: 100vh;
+    min-height: -webkit-fill-available; /* 针对iOS Safari */
     height: auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch; /* iOS平滑滚动 */
@@ -110,6 +120,7 @@ footer a:hover {
   footer {
     font-size: 0.8rem;
     padding: 15px 10px;
+    padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)); /* iOS安全区域 */
     line-height: 1.6;
   }
   
@@ -139,6 +150,7 @@ footer a:hover {
   footer {
     font-size: 0.75rem;
     padding: 12px 8px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); /* iOS安全区域 */
   }
   
   .footer-content {
@@ -154,6 +166,7 @@ footer a:hover {
 @media screen and (max-width: 768px) and (orientation: landscape) {
   footer {
     padding: 12px 10px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); /* iOS安全区域 */
   }
   
   .footer-content {
@@ -178,5 +191,24 @@ footer a:hover {
 :global(body) {
   position: relative;
   overflow-y: auto;
+  /* 针对iOS Safari的视口高度修复 */
+  min-height: -webkit-fill-available;
+}
+
+:global(#app) {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  position: relative;
+}
+
+/* 针对iOS Safari的特定修复 */
+@supports (-webkit-touch-callout: none) {
+  :global(html), :global(body) {
+    height: -webkit-fill-available;
+  }
+  
+  .app-container {
+    height: -webkit-fill-available;
+  }
 }
 </style>
