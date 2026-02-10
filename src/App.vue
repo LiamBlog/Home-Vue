@@ -7,6 +7,7 @@
     <footer>
       <div class="footer-content">
         <span class="footer-item">© 2025 Made in <a href="https://mlhh.cn" target="_blank">十安</a></span>
+        <span class="footer-separator">|</span>
         <a href="https://icp.gov.moe/?keyword=20260998" target="_blank">萌ICP备20260998号</a>
         <span class="footer-separator">|</span>
         <a class="footer-item" href="https://cloud.tencent.com/act/pro/eo-freeplan?ad_trace=3fe11a4b31634407819b427b61a2b768&from=28455&from-column=28455" target="_blank">腾讯云边缘安全加速EdgeOne</a>
